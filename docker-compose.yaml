@@ -1,0 +1,34 @@
+# nginx proxy address - http://172.17.0.1:3009
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "5m"
+    max-file: "1"
+
+services:
+  pairdrop:
+    image: pairdrop/pairdrop:latest
+    container_name: pairdrop-app
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - pairdrop
+    ports:
+      - "3009:3009"
+    environment:
+      TZ: ${TZ:-America/New_York}
+      PUID: ${SERVICE_USER:-1000}
+      PGID: ${SERVICE_GROUP:-1000}
+    volumes:
+      - ./rootfs/config/pairdrop:/config
+      - ./rootfs/data/pairdrop:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3009"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  pairdrop:
+    external: false
