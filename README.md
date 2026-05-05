@@ -47,8 +47,8 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/config/pairdrop` - Data storage
-- `./rootfs/data/pairdrop` - Data storage
+- `./volumes/config/pairdrop` - Data storage
+- `./volumes/data/pairdrop` - Data storage
 
 ## 🔍 Logging
 
