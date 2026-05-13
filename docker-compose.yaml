@@ -16,6 +16,8 @@ services:
     logging: *default-logging
     networks:
       - pairdrop
+      - proxy
+      - cloudflare
     ports:
       - "172.17.0.1:3009:3000"
     environment:
@@ -25,6 +27,8 @@ services:
       RATE_LIMIT: "false"
       WS_FALLBACK: "false"
       RTC_CONFIG: ""
+      CONTAINER_NAME: pairdrop-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
     volumes:
       - ./volumes/config/pairdrop:/config
     healthcheck:
@@ -32,7 +36,27 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://pairdrop-app:3000'
+      - 'cloudflare.hostname=pairdrop.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.pairdrop-app.entrypoints=http'
+      - 'traefik.http.routers.pairdrop-app-secure.tls=true'
+      - 'traefik.http.routers.pairdrop-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.pairdrop-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.pairdrop-app.middlewares=pairdrop-app-https-redirect'
+      - 'traefik.http.routers.pairdrop-app-secure.entrypoints=https'
+      - 'traefik.http.routers.pairdrop-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.pairdrop-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.pairdrop-app-secure.service=pairdrop-app'
+      - 'traefik.http.services.pairdrop-app.loadbalancer.server.port=3000'
 
 networks:
   pairdrop:
     external: false
+  proxy:
+    external: true
+  cloudflare:
+    external: true
