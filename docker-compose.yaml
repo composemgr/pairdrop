@@ -1,5 +1,6 @@
 # nginx proxy address - http://172.17.0.1:3009
 
+name: pairdrop
 x-logging: &default-logging
   driver: json-file
   options:
@@ -8,23 +9,26 @@ x-logging: &default-logging
 
 services:
   pairdrop:
-    image: pairdrop/pairdrop:latest
+    image: lscr.io/linuxserver/pairdrop:latest
+    pull_policy: always
     container_name: pairdrop-app
-    restart: unless-stopped
+    restart: always
     logging: *default-logging
     networks:
       - pairdrop
     ports:
-      - "3009:3009"
+      - "172.17.0.1:3009:3000"
     environment:
       TZ: ${TZ:-America/New_York}
       PUID: ${SERVICE_USER:-1000}
       PGID: ${SERVICE_GROUP:-1000}
+      RATE_LIMIT: "false"
+      WS_FALLBACK: "false"
+      RTC_CONFIG: ""
     volumes:
       - ./volumes/config/pairdrop:/config
-      - ./volumes/data/pairdrop:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3009"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
