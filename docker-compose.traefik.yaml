@@ -1,0 +1,48 @@
+name: pairdrop
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  server:
+    image: lscr.io/linuxserver/pairdrop:latest
+    container_name: pairdrop-server
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: pairdrop-server
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+      PUID: ${SERVICE_USER:-1000}
+      PGID: ${SERVICE_GROUP:-1000}
+      RATE_LIMIT: "false"
+      WS_FALLBACK: "false"
+    volumes:
+      - './volumes/config/pairdrop:/config'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.pairdrop-server.entrypoints=http'
+      - 'traefik.http.routers.pairdrop-server.rule=Host(`${BASE_HOST_NAME:-$HOSTNAME}`)'
+      - 'traefik.http.routers.pairdrop-server.middlewares=pairdrop-server-https-redirect'
+      - 'traefik.http.middlewares.pairdrop-server-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.pairdrop-server-secure.entrypoints=https'
+      - 'traefik.http.routers.pairdrop-server-secure.rule=Host(`${BASE_HOST_NAME:-$HOSTNAME}`)'
+      - 'traefik.http.routers.pairdrop-server-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.pairdrop-server-secure.service=pairdrop-server'
+      - 'traefik.http.services.pairdrop-server.loadbalancer.server.port=3000'
+    networks:
+      - pairdrop
+      - traefik
+
+networks:
+  pairdrop:
+    name: pairdrop
+    external: false
+  traefik:
+    external: true
